@@ -11,7 +11,7 @@ import collections
 
 
 # Functions
-def parse_player_cols(cols):
+def parse_player_cols(cols, season):
 ## Takes a list of columns and parses to their stat
 
     name = cols[1]
@@ -46,6 +46,7 @@ def parse_player_cols(cols):
     fo_pct = float(cols[20])
 
     player = {
+        'season': season,
         'name': name,
         'team': team,
         'pos': pos,
@@ -81,12 +82,30 @@ def output_csv(filename, players):
 
 
 # Setup Urls
-root_url = 'http://www.nhl.com'
-stats_skaters_url = '/ice/playerstats.htm?fetchKey=20152ALLSASAll' \
-                    '&viewName=summary&sort=points&pg=6'
+# Options: position, season, viewName, page
+# viewName will be first so do not use &
+ROOT_URL = 'http://www.nhl.com/ice/playerstats.htm?'
+players_option = 'viewName=summary'
+hits_option = 'viewName=rtssPlayerStats'
+
+# Dynamic Options
+position_option = '&position='
+season_option = '&season='
+page_option = '&page='
+
+# Season options
+SEASONS = {'20142015', '20132014', '20122013', '20112012', '20102011'}
+SEASON = '20142015'
+
+# Position options
+POSITIONS = {'S', 'G'}
+POSITION = 'S'
+
+PAGE = 1
 
 # Get the html
-response = requests.get(root_url + stats_skaters_url)
+response = requests.get(ROOT_URL + players_option + position_option + POSITION
+                        + season_option + SEASON + page_option + str(PAGE))
 #print(response.text)
 
 # Get the response as a soup
@@ -106,7 +125,7 @@ for row in stats_players_rows:
     cols = [ele.text.strip() for ele in cols]
 
     # Parse player stats
-    player = parse_player_cols(cols)
+    player = parse_player_cols(cols, SEASON)
     players.append(player)
 
     # data.append([ele for ele in cols if ele])  # Get rid of empty values
