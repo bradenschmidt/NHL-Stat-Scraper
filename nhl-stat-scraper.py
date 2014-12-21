@@ -81,7 +81,7 @@ def output_csv(filename, players):
         fp.writerows(players)
 
 
-# Setup Urls
+# Setup Url
 # Options: position, season, viewName, page
 # viewName will be first so do not use &
 ROOT_URL = 'http://www.nhl.com/ice/playerstats.htm?'
@@ -91,7 +91,7 @@ hits_option = 'viewName=rtssPlayerStats'
 # Dynamic Options
 position_option = '&position='
 season_option = '&season='
-page_option = '&page='
+page_option = '&pg='
 
 # Season options
 SEASONS = {'20142015', '20132014', '20122013', '20112012', '20102011'}
@@ -101,34 +101,41 @@ SEASON = '20142015'
 POSITIONS = {'S', 'G'}
 POSITION = 'S'
 
-PAGE = 1
+MAX_PAGE = 10
 
-# Get the html
-response = requests.get(ROOT_URL + players_option + position_option + POSITION
-                        + season_option + SEASON + page_option + str(PAGE))
-#print(response.text)
-
-# Get the response as a soup
-soup = bs4.BeautifulSoup(response.text)
-
-# Get the players stats table
-stats_players_table = soup.find('table', {'class': ['data', 'stats']})
-#print(stats_players_table)
-
-# Get the body of the player stats table
-stats_players_table_body = stats_players_table.find('tbody')
-
-stats_players_rows = stats_players_table_body.find_all('tr')
 players = []
-for row in stats_players_rows:
-    cols = row.find_all('td')
-    cols = [ele.text.strip() for ele in cols]
+for page in range(1, MAX_PAGE):
+    # Get the html
+    url = (ROOT_URL + players_option
+           + position_option + POSITION
+           + season_option + SEASON
+           + page_option + str(page))
+    response = requests.get(url)
+    print(url)
+    #print(response.text)
 
-    # Parse player stats
-    player = parse_player_cols(cols, SEASON)
-    players.append(player)
+    # Get the response as a soup
+    soup = bs4.BeautifulSoup(response.text)
 
-    # data.append([ele for ele in cols if ele])  # Get rid of empty values
+    # Get the players stats table
+    stats_players_table = soup.find('table', {'class': ['data', 'stats']})
+    #print(stats_players_table)
+
+    # Get the body of the player stats table
+    stats_players_table_body = stats_players_table.find('tbody')
+
+    stats_players_rows = stats_players_table_body.find_all('tr')
+
+    for row in stats_players_rows:
+        cols = row.find_all('td')
+        cols = [ele.text.strip() for ele in cols]
+
+        # Parse player stats
+        player = parse_player_cols(cols, SEASON)
+        players.append(player)
+
+        # data.append([ele for ele in cols if ele])  # Get rid of empty values
+    time.sleep(1)
 
 # Pretty print the player list
 pp = pprint.PrettyPrinter(indent=4)
