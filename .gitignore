@@ -56,3 +56,6 @@ target/
 
 # MAC
 *.DS_Store
+
+# OUTPUTS
+*.csv
