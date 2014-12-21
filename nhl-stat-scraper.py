@@ -6,12 +6,14 @@ import requests
 import bs4
 import time
 import pprint
+import csv
+import collections
 
 
 # Functions
 def parse_player_cols(cols):
 ## Takes a list of columns and parses to their stat
-#
+
     name = cols[1]
     team = cols[2]
     pos = cols[3]
@@ -20,6 +22,7 @@ def parse_player_cols(cols):
     goals = int(cols[5])
     assists = int(cols[6])
     points = goals + assists
+
     plus_minus = int(cols[8])
     pims = int(cols[9])
 
@@ -66,15 +69,25 @@ def parse_player_cols(cols):
         'shift_gp': shift_gp,
         'fo_pct': fo_pct
     }
-    return player
+
+    return collections.OrderedDict(player)
+
+
+def output_csv(filename, players):
+    with open(filename, 'w') as f:
+        fp = csv.DictWriter(f, players[0].keys())
+        fp.writeheader()
+        fp.writerows(players)
 
 
 # Setup Urls
 root_url = 'http://www.nhl.com'
-stats_players_url = '/ice/playerstats.htm'
+stats_skaters_url = '/ice/playerstats.htm?fetchKey=20152ALLSASAll' \
+                    '&viewName=summary&sort=points&pg=6'
 
 # Get the html
-response = requests.get(root_url + stats_players_url)
+response = requests.get(root_url + stats_skaters_url)
+#print(response.text)
 
 # Get the response as a soup
 soup = bs4.BeautifulSoup(response.text)
@@ -101,3 +114,5 @@ for row in stats_players_rows:
 # Pretty print the player list
 pp = pprint.PrettyPrinter(indent=4)
 pp.pprint(players)
+
+output_csv('skaters.csv', players)
