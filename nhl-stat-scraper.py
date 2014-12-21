@@ -11,10 +11,8 @@ import pprint
 # Functions
 def parse_player_cols(cols):
 ## Takes a list of columns and parses to their stat
-
+#
     name = cols[1]
-    #print('name: ' + name)
-
     team = cols[2]
     pos = cols[3]
     gp = int(cols[4])
@@ -100,5 +98,6 @@ for row in stats_players_rows:
 
     # data.append([ele for ele in cols if ele])  # Get rid of empty values
 
+# Pretty print the player list
 pp = pprint.PrettyPrinter(indent=4)
 pp.pprint(players)
