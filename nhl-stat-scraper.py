@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 ## NHL.com Stats Scraper
 ## Braden Schmidt
 
@@ -9,6 +11,7 @@ import pprint
 import csv
 import collections
 import datetime
+import sys
 
 
 ### Functions
@@ -364,6 +367,22 @@ def get_goalie_stats(season):
 
     return goalies
 
+def create_player_stat_csvs(seasons):
+# Create csvs for goalies and skaters for x number of season
+    # Run stat collection for all selected Seasons
+    print(seasons)
+    for season in seasons:
+        skaters = get_skater_stats(season)
+
+        # Pretty print the player list
+        #pp = pprint.PrettyPrinter(indent=4)
+        #pp.pprint(skaters)
+
+        output_csv('skaters' + season + '.csv', skaters, 'skaters')
+
+        goalies = get_goalie_stats(season)
+        output_csv('goalies' + season + '.csv', goalies, 'goalies')
+
 
 ## Setup Urls
 # Options: position, season, viewName, page
@@ -385,18 +404,6 @@ fetchKey_skater_option = '2ALLSASALL'
 
 # Season options
 # SEASONS = {'2015', '2014', '2013', '2012', '2011'}
-SEASONS = {'2014'}
 
-# Run stat collection for all selected Seasons
-for season in SEASONS:
-    skaters = get_skater_stats(season)
-
-    # Pretty print the player list
-    #pp = pprint.PrettyPrinter(indent=4)
-    #pp.pprint(skaters)
-
-    output_csv('skaters' + season + '.csv', skaters, 'skaters')
-
-    goalies = get_goalie_stats(season)
-    output_csv('goalies' + season + '.csv', goalies, 'goalies')
-
+if __name__ == '__main__':
+    create_player_stat_csvs(sys.argv[1:])
