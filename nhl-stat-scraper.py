@@ -46,9 +46,7 @@ def parse_skater_cols(cols, season):
     shift_gp = float(cols[19])
     fo_pct = float(cols[20])
 
-    player = collections.OrderedDict()
-
-    player = {
+    skater = {
         'season': season,
         'name': name,
         'team': team,
@@ -77,7 +75,7 @@ def parse_skater_cols(cols, season):
         'age': 'NA'
     }
 
-    return collections.OrderedDict(player)
+    return skater
 
 
 def add_hits_bs_to_skaters(cols, skaters):
@@ -121,35 +119,121 @@ def add_age_to_skaters(cols, skaters):
     return skaters
 
 
-def output_csv(filename, players):
-    with open(filename, 'w') as f:
+def parse_goalie_cols(cols, season):
+## Takes a list of columns and parses to their stat
+
+    name = cols[1]
+    team = cols[2]
+    gp = int(cols[3])
+    gs = int(cols[4])
+
+    wins = int(cols[5])
+    losses = int(cols[6])
+    ot = int(cols[7])
+
+    sa = int(cols[8])
+    ga = int(cols[9])
+
+    gaa = float(cols[10])
+    sv = int(cols[11])
+
+    sv_pct = float(cols[12])
+    so = int(cols[13])
+
+    goals = int(cols[14])
+    assists = int(cols[15])
+    points = goals + assists
+
+    pims = cols[16]
+
+    toi = cols[17][:-3]
+    toi = toi.replace(',', '')
+
+    goalie = {
+        'season': season,
+        'name': name,
+        'team': team,
+        'pos': 'G',
+        'gp': gp,
+        'gs': gs,
+        'wins': wins,
+        'losses': losses,
+        'ot': ot,
+        'sa': sa,
+        'ga': ga,
+        'gaa': gaa,
+        'sv': sv,
+        'sv_pct': sv_pct,
+        'so': so,
+        'goals': goals,
+        'assists': assists,
+        'points': points,
+        'pims': pims,
+        'toi': toi,
+        'age': 'NA'
+    }
+
+    return goalie
+
+
+def output_csv(filename, players, type):
+# filename to create csv of
+# players to put in csv
+# type of player: goalies or skaters
+    if type == 'goalies':
+        ordered_fieldnames = collections.OrderedDict([('name', None),
+                                                     ('season', None),
+                                                     ('age', None),
+                                                     ('team', None),
+                                                     ('pos', None),
+                                                     ('gp', None),
+                                                     ('gs', None),
+                                                     ('wins', None),
+                                                     ('losses', None),
+                                                     ('ot', None),
+                                                     ('sa', None),
+                                                     ('ga', None),
+                                                     ('gaa', None),
+                                                     ('sv', None),
+                                                     ('sv_pct', None),
+                                                     ('so', None),
+                                                     ('toi', None),
+                                                     ('pims', None),
+                                                     ('goals', None),
+                                                     ('assists', None),
+                                                     ('points', None)])
+    elif type == 'skaters':
         ordered_fieldnames = collections.OrderedDict([('season', None),
-                                                    ('name', None),
-                                                    ('age', None),
-                                                    ('team', None),
-                                                    ('pos', None),
-                                                    ('gp', None),
-                                                    ('goals', None),
-                                                    ('assists', None),
-                                                    ('points', None),
-                                                    ('plus_minus', None),
-                                                    ('gwg', None),
-                                                    ('pims', None),
-                                                    ('ppg', None),
-                                                    ('ppa', None),
-                                                    ('ppp', None),
-                                                    ('shg', None),
-                                                    ('sha', None),
-                                                    ('shp', None),
-                                                    ('hits', None),
-                                                    ('ot', None),
-                                                    ('shots', None),
-                                                    ('shot_pct', None),
-                                                    ('toi_gp', None),
-                                                    ('shift_gp', None),
-                                                    ('fo_pct', None),
-                                                    ('hits', None),
-                                                    ('bs', None)])
+                                                     ('name', None),
+                                                     ('age', None),
+                                                     ('team', None),
+                                                     ('pos', None),
+                                                     ('gp', None),
+                                                     ('goals', None),
+                                                     ('assists', None),
+                                                     ('points', None),
+                                                     ('plus_minus', None),
+                                                     ('gwg', None),
+                                                     ('pims', None),
+                                                     ('ppg', None),
+                                                     ('ppa', None),
+                                                     ('ppp', None),
+                                                     ('shg', None),
+                                                     ('sha', None),
+                                                     ('shp', None),
+                                                     ('hits', None),
+                                                     ('ot', None),
+                                                     ('shots', None),
+                                                     ('shot_pct', None),
+                                                     ('toi_gp', None),
+                                                     ('shift_gp', None),
+                                                     ('fo_pct', None),
+                                                     ('hits', None),
+                                                     ('bs', None)])
+    else:
+        print('ERROR: Invalid player type: ' + type)
+
+    with open(filename, 'w') as f:
 
         fp = csv.DictWriter(f, fieldnames=ordered_fieldnames)
         fp.writeheader()
@@ -182,8 +266,9 @@ def get_skater_stats(season):
     MAX_PAGE = 2
 
     skaters = []
+
+    # Get the Skaters Info from Summary
     for page in range(1, MAX_PAGE):
-        # Get the Skaters Info from Summary
         skaters_url = (ROOT_URL + summary_option
                        + season_option + season + fetchKey_skater_option
                        + page_option + str(page)
@@ -201,8 +286,8 @@ def get_skater_stats(season):
 
         time.sleep(1)
 
+    # Get the Skaters Info from Real Time Stats (HAS HITS)
     for page in range(1, MAX_PAGE+3):
-        # Get the Skaters Info from Real Time Stats (HAS HITS)
         hits_url = (ROOT_URL + hits_option
                     + season_option + season + fetchKey_skater_option
                     + page_option + str(page)
@@ -216,8 +301,8 @@ def get_skater_stats(season):
 
         time.sleep(1)
 
+    # Get the Skaters Info from Bios (HAS DOB)
     for page in range(1, MAX_PAGE+3):
-        # Get the Skaters Info from Bios (HAS DOB)
         age_url = (ROOT_URL + age_option
                    + season_option + season + fetchKey_skater_option
                    + page_option + str(page)
@@ -232,6 +317,35 @@ def get_skater_stats(season):
         time.sleep(1)
 
     return skaters
+
+
+def get_goalie_stats(season):
+# Get the goalie stats with hits for the given season
+# Return the goalies
+    MAX_PAGE = 2
+
+    goalies = []
+
+    # Get the goalies Info from Summary
+    for page in range(1, MAX_PAGE):
+        goalies_url = (ROOT_URL + summary_option
+                       + season_option + season + fetchKey_goalie_option
+                       + page_option + str(page)
+                       + sort_option + 'wins')
+
+        rows = get_rows(goalies_url)
+
+        for row in rows:
+            cols = row.find_all('td')
+            cols = [ele.text.strip() for ele in cols]
+
+            # Parse goalie stats
+            goalie = parse_goalie_cols(cols, season)
+            goalies.append(goalie)
+
+        time.sleep(1)
+
+    return goalies
 
 
 ## Setup Urls
@@ -257,10 +371,14 @@ SEASONS = {'2014'}
 
 # Run stat collection for all selected Seasons
 for season in SEASONS:
-    skaters = get_skater_stats(season)
+    #skaters = get_skater_stats(season)
 
     # Pretty print the player list
-    pp = pprint.PrettyPrinter(indent=4)
+    #pp = pprint.PrettyPrinter(indent=4)
     #pp.pprint(skaters)
 
-    output_csv('skaters' + season + '.csv', skaters)
+    #output_csv('skaters' + season + '.csv', skaters, 'skaters')
+
+    goalies = get_goalie_stats(season)
+    output_csv('goalies' + season + '.csv', goalies, 'goalies')
+
