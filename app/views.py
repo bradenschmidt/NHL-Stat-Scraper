@@ -1,6 +1,6 @@
 from app import app
 import app.nhl_stat_scraper as nhl_stat_scraper
-from flask import redirect, url_for
+from flask import redirect, url_for, request
 
 
 @app.route('/')
@@ -14,4 +14,4 @@ def nhl():
     l = {2014}
     #nhl_stat_scraper.main(l)
 
-    return redirect(url_for('csv'))
+    return redirect(request.host_url + 'csv/')
