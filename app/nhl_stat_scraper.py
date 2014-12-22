@@ -13,8 +13,6 @@ import collections
 import datetime
 import sys
 
-import pdb
-
 
 ### Functions
 def parse_skater_cols(cols, season):
@@ -239,7 +237,6 @@ def output_csv(filename, players, type):
         print('ERROR: Invalid player type: ' + type)
 
     with open(filename, 'w') as f:
-
         fp = csv.DictWriter(f, fieldnames=ordered_fieldnames)
         fp.writeheader()
         fp.writerows(players)
@@ -275,7 +272,6 @@ def get_skater_stats(season):
 
     # Get the Skaters Info from Summary
     for page in range(1, MAX_PAGE):
-        #pdb.set_trace()
         skaters_url = (ROOT_URL + summary_option
                        + season_option + str(season) + fetchKey_skater_option
                        + page_option + str(page)
@@ -382,12 +378,36 @@ def create_player_stat_csvs(seasons):
         #pp = pprint.PrettyPrinter(indent=4)
         #pp.pprint(skaters)
 
-        output_csv('skaters' + str(season) + '.csv', skaters, 'skaters')
+        output_csv('csv/skaters' + str(season) + '.csv', skaters, 'skaters')
         print('SUCCESS: Created skaters' + str(season) + '.csv')
 
         goalies = get_goalie_stats(season)
-        output_csv('goalies' + str(season) + '.csv', goalies, 'goalies')
+        output_csv('csv/goalies' + str(season) + '.csv', goalies, 'goalies')
         print('SUCCESS: Created goalies' + str(season) + '.csv')
+
+
+def main(argv):
+# Test arguments
+    if len(argv) > 0:
+        seasons = []
+        for arg in argv:
+            arg = int(arg)
+            if arg >= MIN_SEASON and arg <= MAX_SEASON:
+                seasons.append(arg)
+            else:
+                print('ERROR: Skipping invalid argument: ' + str(arg))
+
+        if len(seasons) > 0:
+            create_player_stat_csvs(seasons)
+        else:
+            print('ERROR: No valid arguments.')
+    else:
+        print('ERROR: Missing season arguments.\nUSAGE: Provide year(s) to'
+              + ' collect'
+              + ' stats from with space between them. ie. nhl-stat-scraper'
+              + ' 2015 2014 2013.\nThis will create goalies and skaters stats'
+              + ' in goalies2014.csv and skaters2015.csv etc. Year is the'
+              + ' playoff year that a season ends in.\n')
 
 
 ## Setup Urls
@@ -413,24 +433,4 @@ MAX_SEASON = datetime.date.today().year + 1
 
 if __name__ == '__main__':
 ## Run main
-    # Test arguments
-    if len(sys.argv) > 0:
-        seasons = []
-        for arg in sys.argv[1:]:
-            arg = int(arg)
-            if arg >= MIN_SEASON and arg <= MAX_SEASON:
-                seasons.append(arg)
-            else:
-                print('ERROR: Skipping invalid argument: ' + str(arg))
-
-        if len(seasons) > 0:
-            create_player_stat_csvs(seasons)
-        else:
-            print('ERROR: No valid arguments.')
-    else:
-        print('ERROR: Missing season arguments.\nUSAGE: Provide year(s) to'
-              + ' collect'
-              + ' stats from with space between them. ie. nhl-stat-scraper'
-              + ' 2015 2014 2013.\nThis will create goalies and skaters stats'
-              + ' in goalies2014.csv and skaters2015.csv etc. Year is the'
-              + ' playoff year that a season ends in.\n')
+    main(sys.argv[1:])
