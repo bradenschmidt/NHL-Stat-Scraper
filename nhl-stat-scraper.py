@@ -45,6 +45,8 @@ def parse_skater_cols(cols, season):
     shift_gp = float(cols[19])
     fo_pct = float(cols[20])
 
+    player = collections.OrderedDict()
+
     player = {
         'season': season,
         'name': name,
@@ -69,7 +71,9 @@ def parse_skater_cols(cols, season):
         'toi_gp': toi_gp,
         'shift_gp': shift_gp,
         'fo_pct': fo_pct,
-        'hits': 'NA'
+        'hits': 'NA',
+        'bs': 'NA',
+        'age': 'NA'
     }
 
     return collections.OrderedDict(player)
@@ -82,19 +86,47 @@ def add_hits_to_skaters(cols, skaters):
     name = cols[1]
     team = cols[2]
     hits = cols[6]
-
-    print ('\nHITS:\n' + name + team)
+    bs = cols[7]
 
     for skater in skaters:
         if (skater['name'] == name) and (skater['team'] == team):
             skater['hits'] = hits
+            skater['bs'] = bs
 
     return skaters
 
 
 def output_csv(filename, players):
     with open(filename, 'w') as f:
-        fp = csv.DictWriter(f, players[0].keys())
+        ordered_fieldnames = collections.OrderedDict([('season', None),
+                                                    ('name', None),
+                                                    ('age', None),
+                                                    ('team', None),
+                                                    ('pos', None),
+                                                    ('gp', None),
+                                                    ('goals', None),
+                                                    ('assists', None),
+                                                    ('points', None),
+                                                    ('plus_minus', None),
+                                                    ('gwg', None),
+                                                    ('pims', None),
+                                                    ('ppg', None),
+                                                    ('ppa', None),
+                                                    ('ppp', None),
+                                                    ('shg', None),
+                                                    ('sha', None),
+                                                    ('shp', None),
+                                                    ('hits', None),
+                                                    ('ot', None),
+                                                    ('shots', None),
+                                                    ('shot_pct', None),
+                                                    ('toi_gp', None),
+                                                    ('shift_gp', None),
+                                                    ('fo_pct', None),
+                                                    ('hits', None),
+                                                    ('bs', None)])
+
+        fp = csv.DictWriter(f, fieldnames=ordered_fieldnames)
         fp.writeheader()
         fp.writerows(players)
 
@@ -122,7 +154,7 @@ def get_rows(url):
 def get_skater_stats(season):
 # Get the skater stats with hits for the given season
 # Return the skaters
-    MAX_PAGE = 15
+    MAX_PAGE = 1
     POSITION = 'S'
 
     skaters = []
@@ -130,7 +162,7 @@ def get_skater_stats(season):
         # Get the Skaters Info from Summary
         skaters_url = (ROOT_URL + players_option
                        + position_option + POSITION
-                       + season_option + SEASON
+                       + season_option + season
                        + page_option + str(page))
 
         rows = get_rows(skaters_url)
@@ -140,7 +172,7 @@ def get_skater_stats(season):
             cols = [ele.text.strip() for ele in cols]
 
             # Parse skater stats
-            skater = parse_skater_cols(cols, SEASON)
+            skater = parse_skater_cols(cols, season)
             skaters.append(skater)
 
         time.sleep(1)
@@ -149,7 +181,7 @@ def get_skater_stats(season):
         # Get the Skaters Info from Real Time Stats (HAS HITS)
         hits_url = (ROOT_URL + 'viewName=rtssPlayerStats'
                     + position_option + POSITION
-                    + season_option + SEASON
+                    + season_option + season
                     + page_option + str(page))
 
         rows = get_rows(hits_url)
@@ -163,7 +195,7 @@ def get_skater_stats(season):
     return skaters
 
 
-# Setup Url
+## Setup Urls
 # Options: position, season, viewName, page
 # viewName will be first so do not use &
 ROOT_URL = 'http://www.nhl.com/ice/playerstats.htm?'
@@ -176,13 +208,15 @@ season_option = '&season='
 page_option = '&pg='
 
 # Season options
-SEASONS = {'20142015', '20132014', '20122013', '20112012', '20102011'}
-SEASON = '20142015'
+#SEASONS = {'20142015', '20132014', '20122013', '20112012', '20102011'}
+SEASONS = {'20142015'}
 
-skaters = get_skater_stats(SEASON)
+# Run stat collection for all selected Seasons
+for season in SEASONS:
+    skaters = get_skater_stats(season)
 
-# Pretty print the player list
-pp = pprint.PrettyPrinter(indent=4)
-#pp.pprint(skaters)
+    # Pretty print the player list
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(skaters)
 
-output_csv('skaters.csv', skaters)
+    output_csv('skaters' + season + '.csv', skaters)
