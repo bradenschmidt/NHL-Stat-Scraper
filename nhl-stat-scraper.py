@@ -7,11 +7,13 @@
 import requests
 import bs4
 import time
-import pprint
+#import pprint
 import csv
 import collections
 import datetime
 import sys
+
+import pdb
 
 
 ### Functions
@@ -246,7 +248,7 @@ def output_csv(filename, players, type):
 def get_rows(url):
 # Get table rows from given url
     response = requests.get(url)
-    print(url)
+    #print(url)
     #print(response.text)
 
     # Get the response as a soup
@@ -273,8 +275,9 @@ def get_skater_stats(season):
 
     # Get the Skaters Info from Summary
     for page in range(1, MAX_PAGE):
+        #pdb.set_trace()
         skaters_url = (ROOT_URL + summary_option
-                       + season_option + season + fetchKey_skater_option
+                       + season_option + str(season) + fetchKey_skater_option
                        + page_option + str(page)
                        + sort_option + 'points')
 
@@ -293,7 +296,7 @@ def get_skater_stats(season):
     # Get the Skaters Info from Real Time Stats (HAS HITS)
     for page in range(1, MAX_PAGE+3):
         hits_url = (ROOT_URL + hits_option
-                    + season_option + season + fetchKey_skater_option
+                    + season_option + str(season) + fetchKey_skater_option
                     + page_option + str(page)
                     + sort_option + 'gamesPlayed')
 
@@ -308,7 +311,7 @@ def get_skater_stats(season):
     # Get the Skaters Info from Bios (HAS DOB)
     for page in range(1, MAX_PAGE+3):
         age_url = (ROOT_URL + age_skater_option
-                   + season_option + season + fetchKey_skater_option
+                   + season_option + str(season) + fetchKey_skater_option
                    + page_option + str(page)
                    + sort_option + 'points')
 
@@ -334,7 +337,7 @@ def get_goalie_stats(season):
     # Get the goalies Info from Summary
     for page in range(1, MAX_PAGE):
         goalies_url = (ROOT_URL + summary_option
-                       + season_option + season + fetchKey_goalie_option
+                       + season_option + str(season) + fetchKey_goalie_option
                        + page_option + str(page)
                        + sort_option + 'wins')
 
@@ -353,7 +356,7 @@ def get_goalie_stats(season):
     # Get the Goalies Info from Bios (HAS DOB)
     for page in range(1, MAX_PAGE+3):
         age_url = (ROOT_URL + age_goalie_option
-                   + season_option + season + fetchKey_goalie_option
+                   + season_option + str(season) + fetchKey_goalie_option
                    + page_option + str(page)
                    + sort_option + 'wins')
 
@@ -367,10 +370,11 @@ def get_goalie_stats(season):
 
     return goalies
 
+
 def create_player_stat_csvs(seasons):
 # Create csvs for goalies and skaters for x number of season
     # Run stat collection for all selected Seasons
-    print(seasons)
+    print('Collecting goalie and skater for these seasons: ' + str(seasons))
     for season in seasons:
         skaters = get_skater_stats(season)
 
@@ -378,10 +382,12 @@ def create_player_stat_csvs(seasons):
         #pp = pprint.PrettyPrinter(indent=4)
         #pp.pprint(skaters)
 
-        output_csv('skaters' + season + '.csv', skaters, 'skaters')
+        output_csv('skaters' + str(season) + '.csv', skaters, 'skaters')
+        print('SUCCESS: Created skaters' + str(season) + '.csv')
 
         goalies = get_goalie_stats(season)
-        output_csv('goalies' + season + '.csv', goalies, 'goalies')
+        output_csv('goalies' + str(season) + '.csv', goalies, 'goalies')
+        print('SUCCESS: Created goalies' + str(season) + '.csv')
 
 
 ## Setup Urls
@@ -402,8 +408,29 @@ season_option = '&fetchKey='
 fetchKey_goalie_option = '2ALLGAGALL'
 fetchKey_skater_option = '2ALLSASALL'
 
-# Season options
-# SEASONS = {'2015', '2014', '2013', '2012', '2011'}
+MIN_SEASON = 1918
+MAX_SEASON = datetime.date.today().year + 1
 
 if __name__ == '__main__':
-    create_player_stat_csvs(sys.argv[1:])
+## Run main
+    # Test arguments
+    if len(sys.argv) > 0:
+        seasons = []
+        for arg in sys.argv[1:]:
+            arg = int(arg)
+            if arg >= MIN_SEASON and arg <= MAX_SEASON:
+                seasons.append(arg)
+            else:
+                print('ERROR: Skipping invalid argument: ' + str(arg))
+
+        if len(seasons) > 0:
+            create_player_stat_csvs(seasons)
+        else:
+            print('ERROR: No valid arguments.')
+    else:
+        print('ERROR: Missing season arguments.\nUSAGE: Provide year(s) to'
+              + ' collect'
+              + ' stats from with space between them. ie. nhl-stat-scraper'
+              + ' 2015 2014 2013.\nThis will create goalies and skaters stats'
+              + ' in goalies2014.csv and skaters2015.csv etc. Year is the'
+              + ' playoff year that a season ends in.\n')
