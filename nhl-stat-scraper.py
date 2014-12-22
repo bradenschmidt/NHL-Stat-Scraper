@@ -8,6 +8,7 @@ import time
 import pprint
 import csv
 import collections
+import datetime
 
 
 ### Functions
@@ -79,10 +80,10 @@ def parse_skater_cols(cols, season):
     return collections.OrderedDict(player)
 
 
-def add_hits_to_skaters(cols, skaters):
+def add_hits_bs_to_skaters(cols, skaters):
 # Cols is the skaters row
 # skaters is the current list of skaters
-# Returns the skaters list with hits added to the skaters dict
+# Returns the skaters list with hits and blocks added to the skaters dict
     name = cols[1]
     team = cols[2]
     hits = cols[6]
@@ -92,6 +93,30 @@ def add_hits_to_skaters(cols, skaters):
         if (skater['name'] == name) and (skater['team'] == team):
             skater['hits'] = hits
             skater['bs'] = bs
+
+    return skaters
+
+
+def add_age_to_skaters(cols, skaters):
+# Cols is the skaters row
+# skaters is the current list of skaters
+# Returns the skaters list with hits added to the skaters dict
+    name = cols[1]
+    team = cols[2]
+    dob = cols[4]
+
+    dob_syear = dob[-2:]
+
+    if int(dob_syear) > 50:
+        dob_year = '19' + str(dob_syear)
+    else:
+        dob_year = '20' + str(dob_syear)
+
+    age = datetime.date.today().year - int(dob_year)
+
+    for skater in skaters:
+        if (skater['name'] == name) and (skater['team'] == team):
+            skater['age'] = age
 
     return skaters
 
@@ -154,16 +179,15 @@ def get_rows(url):
 def get_skater_stats(season):
 # Get the skater stats with hits for the given season
 # Return the skaters
-    MAX_PAGE = 1
-    POSITION = 'S'
+    MAX_PAGE = 2
 
     skaters = []
-    for page in range(1, MAX_PAGE+1):
+    for page in range(1, MAX_PAGE):
         # Get the Skaters Info from Summary
-        skaters_url = (ROOT_URL + players_option
-                       + position_option + POSITION
-                       + season_option + season
-                       + page_option + str(page))
+        skaters_url = (ROOT_URL + summary_option
+                       + season_option + season + fetchKey_skater_option
+                       + page_option + str(page)
+                       + sort_option + 'points')
 
         rows = get_rows(skaters_url)
 
@@ -177,18 +201,33 @@ def get_skater_stats(season):
 
         time.sleep(1)
 
-    for page in range(1, MAX_PAGE):
+    for page in range(1, MAX_PAGE+3):
         # Get the Skaters Info from Real Time Stats (HAS HITS)
-        hits_url = (ROOT_URL + 'viewName=rtssPlayerStats'
-                    + position_option + POSITION
-                    + season_option + season
-                    + page_option + str(page))
+        hits_url = (ROOT_URL + hits_option
+                    + season_option + season + fetchKey_skater_option
+                    + page_option + str(page)
+                    + sort_option + 'gamesPlayed')
 
         rows = get_rows(hits_url)
         for row in rows:
             cols = row.find_all('td')
             cols = [ele.text.strip() for ele in cols]
-            skaters = add_hits_to_skaters(cols, skaters)
+            skaters = add_hits_bs_to_skaters(cols, skaters)
+
+        time.sleep(1)
+
+    for page in range(1, MAX_PAGE+3):
+        # Get the Skaters Info from Bios (HAS DOB)
+        age_url = (ROOT_URL + age_option
+                   + season_option + season + fetchKey_skater_option
+                   + page_option + str(page)
+                   + sort_option + 'points')
+
+        rows = get_rows(age_url)
+        for row in rows:
+            cols = row.find_all('td')
+            cols = [ele.text.strip() for ele in cols]
+            skaters = add_age_to_skaters(cols, skaters)
 
         time.sleep(1)
 
@@ -199,17 +238,22 @@ def get_skater_stats(season):
 # Options: position, season, viewName, page
 # viewName will be first so do not use &
 ROOT_URL = 'http://www.nhl.com/ice/playerstats.htm?'
-players_option = 'viewName=summary'
+summary_option = 'viewName=summary'
 hits_option = 'viewName=rtssPlayerStats'
+age_option = 'viewName=bios'
 
 # Dynamic Options
-position_option = '&position='
-season_option = '&season='
 page_option = '&pg='
+sort_option = '&sort='
+
+# &Season2ALLGAGALL as playoffs year (20142015 = &20152ALLGAGALL)
+season_option = '&fetchKey='
+fetchKey_goalie_option = '2ALLGAGALL'
+fetchKey_skater_option = '2ALLSASALL'
 
 # Season options
-#SEASONS = {'20142015', '20132014', '20122013', '20112012', '20102011'}
-SEASONS = {'20142015'}
+# SEASONS = {'2015', '2014', '2013', '2012', '2011'}
+SEASONS = {'2014'}
 
 # Run stat collection for all selected Seasons
 for season in SEASONS:
@@ -217,6 +261,6 @@ for season in SEASONS:
 
     # Pretty print the player list
     pp = pprint.PrettyPrinter(indent=4)
-    pp.pprint(skaters)
+    #pp.pprint(skaters)
 
     output_csv('skaters' + season + '.csv', skaters)
