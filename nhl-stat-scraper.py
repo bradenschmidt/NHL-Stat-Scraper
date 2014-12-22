@@ -95,13 +95,13 @@ def add_hits_bs_to_skaters(cols, skaters):
     return skaters
 
 
-def add_age_to_skaters(cols, skaters):
-# Cols is the skaters row
-# skaters is the current list of skaters
-# Returns the skaters list with hits added to the skaters dict
+def add_age_to_players(cols, players, dob_index):
+# Cols is the players row
+# players is the current list of players
+# Returns the players list with hits added to the players dict
     name = cols[1]
     team = cols[2]
-    dob = cols[4]
+    dob = cols[dob_index]
 
     dob_syear = dob[-2:]
 
@@ -112,11 +112,11 @@ def add_age_to_skaters(cols, skaters):
 
     age = datetime.date.today().year - int(dob_year)
 
-    for skater in skaters:
-        if (skater['name'] == name) and (skater['team'] == team):
-            skater['age'] = age
+    for player in players:
+        if (player['name'] == name) and (player['team'] == team):
+            player['age'] = age
 
-    return skaters
+    return players
 
 
 def parse_goalie_cols(cols, season):
@@ -264,6 +264,7 @@ def get_skater_stats(season):
 # Get the skater stats with hits for the given season
 # Return the skaters
     MAX_PAGE = 2
+    DOB_INDEX = 4
 
     skaters = []
 
@@ -303,7 +304,7 @@ def get_skater_stats(season):
 
     # Get the Skaters Info from Bios (HAS DOB)
     for page in range(1, MAX_PAGE+3):
-        age_url = (ROOT_URL + age_option
+        age_url = (ROOT_URL + age_skater_option
                    + season_option + season + fetchKey_skater_option
                    + page_option + str(page)
                    + sort_option + 'points')
@@ -312,7 +313,7 @@ def get_skater_stats(season):
         for row in rows:
             cols = row.find_all('td')
             cols = [ele.text.strip() for ele in cols]
-            skaters = add_age_to_skaters(cols, skaters)
+            skaters = add_age_to_players(cols, skaters, DOB_INDEX)
 
         time.sleep(1)
 
@@ -323,6 +324,7 @@ def get_goalie_stats(season):
 # Get the goalie stats with hits for the given season
 # Return the goalies
     MAX_PAGE = 2
+    DOB_INDEX = 3
 
     goalies = []
 
@@ -345,6 +347,21 @@ def get_goalie_stats(season):
 
         time.sleep(1)
 
+    # Get the Goalies Info from Bios (HAS DOB)
+    for page in range(1, MAX_PAGE+3):
+        age_url = (ROOT_URL + age_goalie_option
+                   + season_option + season + fetchKey_goalie_option
+                   + page_option + str(page)
+                   + sort_option + 'wins')
+
+        rows = get_rows(age_url)
+        for row in rows:
+            cols = row.find_all('td')
+            cols = [ele.text.strip() for ele in cols]
+            goalies = add_age_to_players(cols, goalies, DOB_INDEX)
+
+    time.sleep(1)
+
     return goalies
 
 
@@ -354,7 +371,8 @@ def get_goalie_stats(season):
 ROOT_URL = 'http://www.nhl.com/ice/playerstats.htm?'
 summary_option = 'viewName=summary'
 hits_option = 'viewName=rtssPlayerStats'
-age_option = 'viewName=bios'
+age_skater_option = 'viewName=bios'
+age_goalie_option = 'viewName=goalieBios'
 
 # Dynamic Options
 page_option = '&pg='
@@ -371,13 +389,13 @@ SEASONS = {'2014'}
 
 # Run stat collection for all selected Seasons
 for season in SEASONS:
-    #skaters = get_skater_stats(season)
+    skaters = get_skater_stats(season)
 
     # Pretty print the player list
     #pp = pprint.PrettyPrinter(indent=4)
     #pp.pprint(skaters)
 
-    #output_csv('skaters' + season + '.csv', skaters, 'skaters')
+    output_csv('skaters' + season + '.csv', skaters, 'skaters')
 
     goalies = get_goalie_stats(season)
     output_csv('goalies' + season + '.csv', goalies, 'goalies')
