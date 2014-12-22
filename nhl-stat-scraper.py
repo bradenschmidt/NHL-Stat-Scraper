@@ -10,8 +10,8 @@ import csv
 import collections
 
 
-# Functions
-def parse_player_cols(cols, season):
+### Functions
+def parse_skater_cols(cols, season):
 ## Takes a list of columns and parses to their stat
 
     name = cols[1]
@@ -68,10 +68,28 @@ def parse_player_cols(cols, season):
         'shot_pct': shot_pct,
         'toi_gp': toi_gp,
         'shift_gp': shift_gp,
-        'fo_pct': fo_pct
+        'fo_pct': fo_pct,
+        'hits': 'NA'
     }
 
     return collections.OrderedDict(player)
+
+
+def add_hits_to_skaters(cols, skaters):
+# Cols is the skaters row
+# skaters is the current list of skaters
+# Returns the skaters list with hits added to the skaters dict
+    name = cols[1]
+    team = cols[2]
+    hits = cols[6]
+
+    print ('\nHITS:\n' + name + team)
+
+    for skater in skaters:
+        if (skater['name'] == name) and (skater['team'] == team):
+            skater['hits'] = hits
+
+    return skaters
 
 
 def output_csv(filename, players):
@@ -79,6 +97,70 @@ def output_csv(filename, players):
         fp = csv.DictWriter(f, players[0].keys())
         fp.writeheader()
         fp.writerows(players)
+
+
+def get_rows(url):
+# Get table rows from given url
+    response = requests.get(url)
+    print(url)
+    #print(response.text)
+
+    # Get the response as a soup
+    soup = bs4.BeautifulSoup(response.text)
+
+    # Get the players stats table
+    table = soup.find('table', {'class': ['data', 'stats']})
+    #print(stats_players_table)
+
+    # Get the body of the player stats table
+    table_body = table.find('tbody')
+
+    rows = table_body.find_all('tr')
+    return rows
+
+
+def get_skater_stats(season):
+# Get the skater stats with hits for the given season
+# Return the skaters
+    MAX_PAGE = 15
+    POSITION = 'S'
+
+    skaters = []
+    for page in range(1, MAX_PAGE+1):
+        # Get the Skaters Info from Summary
+        skaters_url = (ROOT_URL + players_option
+                       + position_option + POSITION
+                       + season_option + SEASON
+                       + page_option + str(page))
+
+        rows = get_rows(skaters_url)
+
+        for row in rows:
+            cols = row.find_all('td')
+            cols = [ele.text.strip() for ele in cols]
+
+            # Parse skater stats
+            skater = parse_skater_cols(cols, SEASON)
+            skaters.append(skater)
+
+        time.sleep(1)
+
+    for page in range(1, MAX_PAGE):
+        # Get the Skaters Info from Real Time Stats (HAS HITS)
+        hits_url = (ROOT_URL + 'viewName=rtssPlayerStats'
+                    + position_option + POSITION
+                    + season_option + SEASON
+                    + page_option + str(page))
+
+        rows = get_rows(hits_url)
+        for row in rows:
+            cols = row.find_all('td')
+            cols = [ele.text.strip() for ele in cols]
+            skaters = add_hits_to_skaters(cols, skaters)
+
+        time.sleep(1)
+
+    return skaters
 
 
 # Setup Url
@@ -97,48 +179,10 @@ page_option = '&pg='
 SEASONS = {'20142015', '20132014', '20122013', '20112012', '20102011'}
 SEASON = '20142015'
 
-# Position options
-POSITIONS = {'S', 'G'}
-POSITION = 'S'
-
-MAX_PAGE = 10
-
-players = []
-for page in range(1, MAX_PAGE):
-    # Get the html
-    url = (ROOT_URL + players_option
-           + position_option + POSITION
-           + season_option + SEASON
-           + page_option + str(page))
-    response = requests.get(url)
-    print(url)
-    #print(response.text)
-
-    # Get the response as a soup
-    soup = bs4.BeautifulSoup(response.text)
-
-    # Get the players stats table
-    stats_players_table = soup.find('table', {'class': ['data', 'stats']})
-    #print(stats_players_table)
-
-    # Get the body of the player stats table
-    stats_players_table_body = stats_players_table.find('tbody')
-
-    stats_players_rows = stats_players_table_body.find_all('tr')
-
-    for row in stats_players_rows:
-        cols = row.find_all('td')
-        cols = [ele.text.strip() for ele in cols]
-
-        # Parse player stats
-        player = parse_player_cols(cols, SEASON)
-        players.append(player)
-
-        # data.append([ele for ele in cols if ele])  # Get rid of empty values
-    time.sleep(1)
+skaters = get_skater_stats(SEASON)
 
 # Pretty print the player list
 pp = pprint.PrettyPrinter(indent=4)
-pp.pprint(players)
+#pp.pprint(skaters)
 
-output_csv('skaters.csv', players)
+output_csv('skaters.csv', skaters)
